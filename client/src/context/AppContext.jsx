@@ -73,8 +73,8 @@ export const AppProvider = ({ children }) => {
         }
     }
 
-    const fetchDriveContent = useCallback(() => {
-        async (folderId = currentFolderId, search = searchQuery, sort = sortBy) => {
+    const fetchDriveContent = useCallback(
+      async (folderId = currentFolderId, search = searchQuery, sort = sortBy) => {
             if (!user) return;
             setIsDriveLoading(true);
             try {
@@ -92,8 +92,9 @@ export const AppProvider = ({ children }) => {
             } finally {
                 setIsDriveLoading(false);
             }
-        }
-    }, [user, currentFolderId, searchQuery, sortBy]);
+        },
+        [user, currentFolderId, searchQuery, sortBy]
+    );
 
     const value = {
         user,
