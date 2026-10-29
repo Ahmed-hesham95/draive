@@ -29,12 +29,13 @@ const Sidebar = ({ onCreateFolderClick, isMobileOpen, setIsMobileOpen }) => {
     Math.round((storge_used / storge_limit) * 100),
   );
 
-  const handleFileSelect = ()=>{
+  const handleFileSelect = (e)=>{
     if(e.target.files && e.target.files.length > 0){
       uploadFiles(e.target.files, currentFolderId);
       e.target.value = "";
     }
   }
+  
 
   const navItems = [
     { label: "My Drive", path: "/", icon: HardDrive },

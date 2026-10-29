@@ -30,9 +30,9 @@ export function useDrive() {
   };
   // file Upload with simulated progress
   const uploadFiles = async (fileList, folder_id = currentFolderId) => {
-    if (!fileList?.lenght) return;
+    if (!fileList?.length) return;
     setIsUploading(true);
-    setIsUploading(0);
+    setUploadProgress(0);
     const totalsize = Array.from(fileList).reduce(
       (acc, f) => acc + (f.size || 0),
       0,
@@ -51,7 +51,7 @@ export function useDrive() {
       clearInterval(interval);
       setUploadProgress(100);
       await new Promise((r) => setTimeout(r, 300));
-      toast.success(`${data.files.lenght} file(s) uploaded successfully`);
+      toast.success(`${data.files.length} file(s) uploaded successfully`);
       await fetchDriveContent(folder_id);
       await refreshUser();
     } catch (err) {
