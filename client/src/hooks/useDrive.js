@@ -17,18 +17,24 @@ export function useDrive() {
     setUploadProgress,
   } = useApp();
   //   Reusable API Action runner with standard toast & callback
-  const runAction = async (apiCall, successMsg, errorMsg, afterSuccess) => {
-    try {
-      const res = await apiCall;
-      if (successMsg) toast.success(successMsg);
-      if (afterSuccess) await afterSuccess(res?.data);
-      return true;
-    } catch (err) {
-      toast.error(err.response?.data?.error || errorMsg);
-      return false;
-    }
-  };
-  // file Upload with simulated progress
+const runAction = async (apiCall, successMsg, errorMsg, afterSuccess) => {
+  let res;
+  try {
+    res = await apiCall;
+  } catch (err) {
+    toast.error(err.response?.data?.error || errorMsg);
+    return false;
+  }
+
+  if (successMsg) toast.success(successMsg);
+
+  try {
+    if (afterSuccess) await afterSuccess(res?.data);
+  } catch (err) {
+    console.error("afterSuccess failed:", err);
+  }
+  return true;
+};  // file Upload with simulated progress
   const uploadFiles = async (fileList, folder_id = currentFolderId) => {
     if (!fileList?.length) return;
     setIsUploading(true);
