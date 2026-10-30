@@ -165,7 +165,7 @@ const SharedWithMe = () => {
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-600
                         hover:bg-orange-700 text-white text-xs font-semibold rounded-lg transition
                         shrink-0"
-                        href={f.url}>
+                        href={f.url || f.preview_url || `/api/files/${f.id}/download`}>
                           <DownloadIcon className="size-3.5"/>
                           <span>Download</span>
                         </a>
