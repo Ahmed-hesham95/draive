@@ -36,7 +36,9 @@ export const createShareLink = async (req, res) => {
             // Check for an existing share link for this resource 
             const [existing] = await sql`
             SELECT * FROM share_links
-            WHERE resource_id = ${resource.id} AND owner_id = ${req.user.id}
+            WHERE resource_type = ${resourceType}
+            AND resource_id = ${resource.id}
+            AND owner_id = ${req.user.id}
             `;
             if (existing && existing.expires_at && new Date() > new Date(existing.expires_at)) {
                 await sql`
