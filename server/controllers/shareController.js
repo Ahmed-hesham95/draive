@@ -68,9 +68,9 @@ export const getUserShareLinks = async (req, res) => {
         const activeShareLinks = await sql
             `SELECT sl.*,
                 CASE
-                    WHEN s1.resource_type = 'file' THEN json_build_object ('id', f.id, 'name', f.
+                    WHEN sl.resource_type = 'file' THEN json_build_object ('id', f.id, 'name', f.
                     name, 'mime_type', f.mime_type, 'size', f.size)
-                    WHEN s1.resource_type = 'folder' THEN json_build_object('id', fo.id,
+                    WHEN sl.resource_type = 'folder' THEN json_build_object('id', fo.id,
                     'name', fo. name)
                     END AS resource
                 FROM share_links sl
@@ -80,15 +80,15 @@ export const getUserShareLinks = async (req, res) => {
                 LEFT JOIN folders fo ON sl.resource_type = 'folder' AND fo.id = sl.resource_id AND
                 fo.is_trashed = false
                 WHERE sl.owner_id = ${req.user.id}
-            AND (
-                sl.resource_type = 'file' AND f.id IS NOT NULL AND (f. folder_id IS NULL OR pf.
-                is_trashed = false))
+                AND (
+                (sl.resource_type = 'file' AND f.id IS NOT NULL
+                    AND (f.folder_id IS NULL OR pf.is_trashed = false))
                 OR
                 (sl.resource_type = 'folder' AND fo.id IS NOT NULL)
-            )
+                )
             ORDER BY sl.created_at DESC
             `
-            return res.status(200).json({ share_link: activeShareLinks })
+            return res.status(200).json({ share_links: activeShareLinks });
     } catch (error) {
         return res.status(500).json({error: error.message})
     }
