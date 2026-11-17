@@ -26,14 +26,14 @@ export const registerUser = async (req, res) => {
     try {
         const { name , email , password } = req.body;
         if(!name?.trim() || !email?.trim() || !password){
-            return res.status(400).js({error: "Name, email, and password are required."})
+            return res.status(400).json({error: "Name, email, and password are required."})
         }
         const normalizedEmail = email.toLowerCase().trim();
 
         const [existing] = await sql`SELECT id FROM users WHERE email = ${normalizedEmail}`;
 
         if(existing){
-            return res.status(400).js({error: "User with this email already exists."})
+            return res.status(400).json({error: "User with this email already exists."})
         }
 
         const salt = await bcrypt.genSalt(10);
@@ -45,7 +45,7 @@ export const registerUser = async (req, res) => {
         VALUES (${name}, ${normalizedEmail}, ${hashedPassword}, ${storageLimit}) 
         RETURNING id, name, email, storage_used, storage_limit, created_at, updated_at`;
 
-        return sendTokenResponse(res, user.id, 201, {user});
+        return sendTokenResponse(user.id, res, 201, { user });
     } catch (error) {
         return res.status(500).json({error: error.message || "Server error"});
     }
@@ -57,7 +57,7 @@ export const loginUser = async (req, res) => {
     try {
         const { email , password } = req.body;
         if(!email?.trim() || !password){
-            return res.status(400).js({error: "Email and password are required."})
+            return res.status(400).json({error: "Email and password are required."})
         }
         const normalizedEmail = email.toLowerCase().trim();
 
@@ -65,7 +65,7 @@ export const loginUser = async (req, res) => {
         storage_limit, created_at, updated_at FROM users WHERE email = ${normalizedEmail}`;
 
         if(!user){
-            return res.status(401).js({error: "Invalid email or password."})
+            return res.status(401).json({error: "Invalid email or password."})
         }
         const isMatch = await bcrypt.compare(password, user.password);
         if(!isMatch){
@@ -73,7 +73,7 @@ export const loginUser = async (req, res) => {
         }
         delete user.password; // Remove password from user object before sending response
 
-        return sendTokenResponse(res, user.id, 200, {user});
+        return sendTokenResponse(user.id, res, 200, { user });
     } catch (error) {
         return res.status(500).json({error: error.message || "Server error"});
     }
