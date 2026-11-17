@@ -31,9 +31,9 @@ export const createFolder = async (req, res) => {
         if (existing) {
             return res.status(409).json({ error: "Folder with the same name already exists." });
         }
-        const [folder] = await sql`INSERT INTO folders (name, parent_id, path, owner_id, path) 
-        VALUES (${name.trim()}, ${targetParent || null}, 
-        ${folderpath}, ${req.user.id}) RETURNING *`;
+        const [folder] = await sql`INSERT INTO folders (name, parent_id, path, owner_id)
+            VALUES (${name.trim()}, ${targetParent || null}, ${folderpath}::uuid[], ${req.user.id})
+            RETURNING *`;
 
         return res.status(201).json({ folder });
     } catch (error) {
@@ -45,7 +45,7 @@ export const createFolder = async (req, res) => {
 // GET /api/folders
 export const getFolders = async (req, res) => {
     try {
-        const { parent } = req.query.parent_id ?? req.query.parent;
+        const parent = req.query.parent_id ?? req.query.parent;
         const parentId = !parent || parent === "null" ? null : parent; 
 
         const folders = await sql`SELECT * FROM folders 
@@ -75,7 +75,7 @@ export const getFolderDetails = async (req, res) => {
         const ancestorMap = new Map(ancestors.map((a) => [a.id, a.name]));
         const breadcrumb = [
             { id: null, name: "My Drive" },
-            ...ancestorsIds.map((aid) => ({ id: aid, name: ancestorMap.get(id) ?? "" })),
+            ...ancestorsIds.map((aid) => ({ id: aid, name: ancestorMap.get(aid) ?? "" })),
             { id: folder.id, name: folder.name },
         ];
         return res.status(200).json({ folder, breadcrumb });
@@ -92,8 +92,8 @@ export const renameFolder = async (req, res) => {
         if (!name?.trim()) {
             return res.status(400).json({ error: "Folder name is required." });
         }
-        const [folder] = await sql`UPDATE folders SET name = ${name.trim()}
-        update_at = NOW() WHERE id = ${req.params.id} AND owner_id = ${req.user.id} 
+        const [folder] = await sql`UPDATE folders SET name = ${name.trim()}, updated_at = NOW()
+        WHERE id = ${req.params.id} AND owner_id = ${req.user.id} 
         AND is_trashed = false RETURNING *`;
         if (!folder) {
             return res.status(404).json({ error: "Folder not found." });
@@ -137,20 +137,19 @@ export const moveFolder = async (req, res) => {
             // Update Moved folder
             await sql `
             UPDATE folders SET parent_id = ${targetParent || null}, 
-            path = ${newPath}, 
-            update_at = NOW()
+            path = ${newPath}::uuid[], 
+            updated_at = NOW()
             WHERE id = ${folderId}`;
             // Update all descendants' paths
             const descendants = await sql`SELECT id, path FROM folders 
-            WHERE ${folderId} = ANY(path::text[])
-            AND owner_id = ${req.user.id}`;
+            WHERE ${folderId}::uuid = ANY(path) AND owner_id = ${req.user.id}`;
             if (descendants.length > 0) {
                 await Promise.all(descendants.map((desc) => {
                     const folderIndex = desc.path.findIndex((p) => p === folderId);
                     const subpath = folderIndex !== -1 ? desc.path.slice(folderIndex + 1) : [];
                     const updatedPath = [...newPath, folderId, ...subpath];
                     return sql`
-                    UPDATE folders SET path = ${updatedPath}, update_at = NOW()
+                    UPDATE folders SET path = ${updatedPath}::uuid[], updated_at = NOW()
                     WHERE id = ${desc.id}`;
                 })
             ); 

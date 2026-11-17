@@ -40,9 +40,7 @@ export const uploadFiles = async (req, res) => {
             const limitGb = (Number(req.user.storage_limit) / (1024 * 1024 * 1024)).
             toFixed(1);
             return res.status(400).json({
-                error: `Upload exceeds storage quota limit of 
-                ${limitGb} GB.
-                `
+                error: `Upload exceeds storage quota limit of ${limitGb} GB.`
             });
         }
         // Stream buffers to storage and record in database in parallel
@@ -50,9 +48,7 @@ export const uploadFiles = async (req, res) => {
             req.files.map(async (multerFile) => {
                 const fileExt = path.extname(multerFile.originalname);
                 const randomString = crypto.randomBytes(8).toString("hex");
-                const s3Key = `users/${req.user.id}/${Date.now()}_${randomString}
-                ${fileExt}
-                `
+                const s3Key = `users/${req.user.id}/${Date.now()}_${randomString}${fileExt}`;
                 await uploadToStorage(multerFile.buffer, s3Key, multerFile.mimetype)
                 const [row] = await sql`
                 INSERT INTO files (
@@ -92,7 +88,7 @@ export const getFiles = async (req, res) => {
             limit = 50
         } = req.query;
         const pageNum = Math.max(1, parseInt(page, 10) || 1);
-        const limitNum = Math.main(100, Math.max(1, parseInt(limit, 10)) ||50);
+        const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 50));
         const offset = (pageNum - 1) * limitNum;
         const orderBy = SORT_MAP[sort] || SORT_MAP.name_asc;
 
@@ -109,7 +105,7 @@ export const getFiles = async (req, res) => {
             AND is_trashed = false
             AND (${isSearch}::boolean =true 
             AND name ILIKE ${pattern} OR ${isSearch}::boolean = false
-            AND folder_id IS NOT DISTINCT FROM ${targetFolderId})
+            AND folder_id IS NOT DISTINCT FROM ${targetFolderId}::uuid
             ORDER BY ${sql.unsafe(orderBy)}
             LIMIT ${limitNum} OFFSET ${offset}
             `,
@@ -246,7 +242,7 @@ export const restoreFile = async (req, res) => {
         UPDATE files
         SET is_trashed = false, trashed_at = NULL, updated_at = NOW()
         WHERE id = ${req.params.id} AND owner_id = ${req.user.id}
-        AND is_trashed = false
+        AND is_trashed = true
         RETURNING id
         `
         if (!file) {
