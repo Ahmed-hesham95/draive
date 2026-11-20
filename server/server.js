@@ -12,7 +12,6 @@ import fileRouter from "./routes/fileRoutes.js";
 import trashRouter from "./routes/trashRoutes.js";
 import shareRouter from "./routes/shareRoutes.js";
 
-
 const app = express();
 
 // cors config
@@ -20,9 +19,20 @@ const allowedOrigins = process.env.ORIGINS.split(",");
 app.use(cors({ origin: allowedOrigins, credentials: true }));
 
 // MIDDLEWARES
-
 app.use(cookieParser());
 app.use(express.json({ limit: "100mb" }));
+
+let dbReady;
+app.use(async (_req, _res, next) => {
+  try {
+    dbReady ??= initDB();
+    await dbReady;
+    next();
+  } catch (err) {
+    dbReady = undefined;
+    next(err);
+  }
+});
 
 // ROOT API
 app.get("/", (_req, res) => res.send("Server is Running"));
@@ -30,9 +40,9 @@ app.get("/", (_req, res) => res.send("Server is Running"));
 // ROUTES
 app.use("/api/auth", authRouter);
 app.use("/api/folders", folderRouter);
-app.use("/api/files", fileRouter)
-app.use("/api/trash", trashRouter)
-app.use("/api/shares", shareRouter)
+app.use("/api/files", fileRouter);
+app.use("/api/trash", trashRouter);
+app.use("/api/shares", shareRouter);
 
 // Error Handling Middleware
 app.use((err, _req, res, _next) => {
@@ -43,9 +53,10 @@ app.use((err, _req, res, _next) => {
 
 const port = process.env.PORT || 3000;
 
-// INITIALIZE DB CONNECTION THEN START SERVER
-initDB().then(() => {
+if (!process.env.VERCEL) {
   app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
   });
-});
+}
+
+export default app;
